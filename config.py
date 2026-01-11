@@ -20,5 +20,14 @@ def get_config():
         "API_SECRET": api_secret,
         "TESTNET": is_testnet,
         "SYMBOL": "BTCUSDT",
-        "QUANTITY": 0.001
+        "QUANTITY": 0.001,
+        "FEE_RATE": 0.001, # 0.1% Binance Standard Fee
+        "STOP_LOSS_PCT": 0.02, # 2% Stop Loss
+        "TAKE_PROFIT_PCT": 0.05, # 5% Take Profit
+        "EMA_PERIOD": 200,
+        "RSI_PERIOD": 14,
+        "S3_BUCKET": os.getenv('AWS_S3_BUCKET', '032281018699-trading-bot-logs-bucket'),
+        "CSV_FILE": "trades_log.csv",
+        "CHART_FILE": "performance_chart.png",
+        "AWS_REGION": os.getenv('AWS_REGION') or os.getenv('AWS_DEFAULT_REGION') or 'us-east-1'
     }
