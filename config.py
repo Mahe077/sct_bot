@@ -31,3 +31,11 @@ def get_config():
         "CHART_FILE": "performance_chart.png",
         "AWS_REGION": os.getenv('AWS_REGION') or os.getenv('AWS_DEFAULT_REGION') or 'us-east-1'
     }
+
+def get_sanitized_config():
+    """Returns the configuration without sensitive API keys for logging."""
+    config = get_config()
+    safe_config = config.copy()
+    safe_config['API_KEY'] = '********'
+    safe_config['API_SECRET'] = '********'
+    return safe_config
