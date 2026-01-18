@@ -89,10 +89,11 @@ def calculate_metrics(prices, volumes=None, rsi_period=14, ema_period=200, atr_p
     
     # 4. Volume Confirmation (Wait for buying pressure)
     vol_confirm = True
-    if volumes is not None:
+    if volumes is not None and len(volumes) >= 10:
         vol_series = pd.Series(volumes)
         avg_vol = vol_series.rolling(window=10).mean()
-        vol_confirm = vol_series.iloc[-1] > avg_vol.iloc[-1]
+        if not avg_vol.empty and not pd.isna(avg_vol.iloc[-1]):
+            vol_confirm = vol_series.iloc[-1] > avg_vol.iloc[-1]
 
     return rsi.iloc[-1], ema_200.iloc[-1], atr.iloc[-1], vol_confirm
 
