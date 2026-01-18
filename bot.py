@@ -26,7 +26,8 @@ async def main():
             
             print(Style.BRIGHT + Fore.CYAN + f"\n=== Binance Robust System Pro Started ===")
             print(f"Symbol: {config['SYMBOL']} | Testnet: {config['TESTNET']}")
-            print(f"EMA Trend: {config['EMA_PERIOD']} | SL: {config['STOP_LOSS_PCT']*100}% | TP: {config['TAKE_PROFIT_PCT']*100}%")
+            print(f"EMA Trend: {config['EMA_PERIOD']} | ATR Period: {config['ATR_PERIOD']}")
+            print(f"SL: {config['ATR_MULTIPLIER_SL']}x ATR | TP: {config['ATR_MULTIPLIER_TP']}x ATR | Min Profit: {config['MIN_PROFIT_BUFFER']*100}%")
 
             # Bootstrapping: Fetch enough data for EMA 200
             print(Fore.YELLOW + f"Bootstrapping {config['EMA_PERIOD']} periods for trend analysis...")
@@ -92,6 +93,12 @@ async def main():
                                 temp_volumes,
                                 current_pos_price=float(tracker.entry_price) if in_position else 0,
                                 highest_since_entry=highest_since_entry,
+                                rsi_period=config['RSI_PERIOD'],
+                                ema_period=config['EMA_PERIOD'],
+                                atr_period=config['ATR_PERIOD'],
+                                atr_multiplier_sl=config['ATR_MULTIPLIER_SL'],
+                                atr_multiplier_tp=config['ATR_MULTIPLIER_TP'],
+                                min_profit_buffer=config['MIN_PROFIT_BUFFER'],
                                 fee_rate=config['FEE_RATE']
                             )
                             

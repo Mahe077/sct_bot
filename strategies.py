@@ -69,7 +69,7 @@ def check_rsi_strategy_pro(prices, current_pos_price=0):
 
 def calculate_metrics(prices, volumes=None, rsi_period=14, ema_period=200, atr_period=14):
     if len(prices) < ema_period:
-        return None, None
+        return None, None, None, None
     
     series = pd.Series(prices)
     
@@ -96,29 +96,34 @@ def calculate_metrics(prices, volumes=None, rsi_period=14, ema_period=200, atr_p
 
     return rsi.iloc[-1], ema_200.iloc[-1], atr.iloc[-1], vol_confirm
 
-def check_strategy_final(prices, volumes, current_pos_price=0, highest_since_entry=0):
-    rsi, ema_200, atr, vol_confirm = calculate_metrics(prices, volumes)
-    if rsi is None: return "HOLD", None, 0
+def check_strategy_final(prices, volumes, current_pos_price=0, highest_since_entry=0, 
+                         rsi_period=14, ema_period=200, atr_period=14, 
+                         atr_multiplier_sl=2.0, atr_multiplier_tp=1.5, 
+                         min_profit_buffer=0.0025, fee_rate=0.001):
+    rsi, ema_200, atr, vol_confirm = calculate_metrics(prices, volumes, rsi_period, ema_period, atr_period)
+    if rsi is None: return "HOLD", None
 
     current_price = prices[-1]
     # Calculate break-even price (covers buy and sell fees)
     break_even = float(current_pos_price) * (1 + (fee_rate * 2))
+    # Calculate minimum profitable exit (break-even + min profit buffer)
+    min_profitable_exit = float(current_pos_price) * (1 + (fee_rate * 2) + min_profit_buffer)
     
     if current_pos_price > 0:
-        # A. Dynamic ATR-based Stop Loss (e.g., 2.0x ATR below entry)
+        # A. Dynamic ATR-based Stop Loss (configurable ATR multiplier)
         # This gives the trade "room to breathe" during volatility
-        stop_loss_price = float(current_pos_price) - (float(atr) * 2.0)
+        stop_loss_price = float(current_pos_price) - (float(atr) * atr_multiplier_sl)
         if current_price < stop_loss_price:
             return "SELL_STOP_LOSS", rsi
 
-        # B. Trailing Take Profit
-        # If price is up significantly, and drops 1 ATR from its peak, lock in profit
-        trailing_stop = float(highest_since_entry) - (float(atr) * 1.5)
-        if current_price > break_even and current_price < trailing_stop:
+        # B. Trailing Take Profit (configurable ATR multiplier)
+        # If price is up significantly, and drops from its peak, lock in profit
+        trailing_stop = float(highest_since_entry) - (float(atr) * atr_multiplier_tp)
+        if current_price > min_profitable_exit and current_price < trailing_stop:
             return "SELL_TRAILING_TP", rsi
 
-        # C. RSI Exit (Only if in profit to avoid fee drain)
-        if rsi > 70 and current_price > break_even:
+        # C. RSI Exit (Only if minimum profit buffer is met to avoid fee drain)
+        if rsi > 70 and current_price > min_profitable_exit:
             return "SELL_RSI_EXIT", rsi
 
     # --- 2. ENTRY LOGIC (Trend + RSI + Volume) ---
