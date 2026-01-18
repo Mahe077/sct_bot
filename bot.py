@@ -32,10 +32,11 @@ async def main():
             print(Fore.YELLOW + f"Bootstrapping {config['EMA_PERIOD']} periods for trend analysis...")
             klines = await client.get_klines(
                 symbol=config["SYMBOL"], 
-                interval=AsyncClient.KLINE_INTERVAL_1MINUTE, 
+                interval=config["TIMEFRAME"], 
                 limit=config['EMA_PERIOD'] + 20
             )
             closes = [float(k[4]) for k in klines]
+            volumes = [float(k[5]) for k in klines] # New
             print(Fore.GREEN + "Bootstrap complete.\n")
 
             # FETCH ACTUAL STARTING BALANCE
@@ -54,9 +55,11 @@ async def main():
 
             # WebSocket Manager
             bm = BinanceSocketManager(client)
-            ts = bm.kline_socket(symbol=config["SYMBOL"], interval=AsyncClient.KLINE_INTERVAL_1MINUTE)
+            ts = bm.kline_socket(symbol=config["SYMBOL"], interval=config["TIMEFRAME"])
 
             async with ts as tscm:
+                highest_since_entry = 0
+
                 while True:
                     try:
                         # HEARTBEAT: Wait for data with 70s timeout (1m klines)
@@ -67,17 +70,29 @@ async def main():
                             is_kline_closed = kline['x']
                             current_price = float(kline['c'])
 
+                            # Every time you receive a new price and are in a position:
+                            if in_position:
+                                highest_since_entry = max(highest_since_entry, current_price)
+                            else:
+                                highest_since_entry = 0
+
                             if is_kline_closed:
                                 closes.append(current_price)
+                                volumes.append(float(kline['v'])) # Ensure volumes are stored too!
                                 if len(closes) > 300: # Slightly over EMA_PERIOD
                                     closes.pop(0)
+                                    volumes.pop(0)
                             
                             temp_closes = closes + [current_price] if not is_kline_closed else closes
+                            temp_volumes = volumes + [float(kline['v'])] if not is_kline_closed else volumes
                             
                             # FINAL STRATEGY: Trend + RSI + SL/TP
                             signal, rsi_value = check_strategy_final(
-                                temp_closes, 
-                                current_pos_price=float(tracker.entry_price) if in_position else 0
+                                temp_closes,
+                                temp_volumes,
+                                current_pos_price=float(tracker.entry_price) if in_position else 0,
+                                highest_since_entry=highest_since_entry,
+                                fee_rate=config['FEE_RATE']
                             )
                             
                             # Visual Feedback

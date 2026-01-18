@@ -75,10 +75,17 @@ def get_config():
         "SYMBOL": res("SYMBOL", "BTCUSDT"),
         "QUANTITY": float(res("QUANTITY", 0.001)),
         "FEE_RATE": float(res("FEE_RATE", 0.001)),
+        "TIMEFRAME": res("TIMEFRAME", "5m"),
+        # --- Legacy Fallbacks ---
         "STOP_LOSS_PCT": float(res("STOP_LOSS_PCT", 0.02)),
         "TAKE_PROFIT_PCT": float(res("TAKE_PROFIT_PCT", 0.05)),
         "EMA_PERIOD": int(res("EMA_PERIOD", 200)),
         "RSI_PERIOD": int(res("RSI_PERIOD", 14)),
+        # --- New Adaptive Settings ---
+        "ATR_PERIOD": int(res("ATR_PERIOD", 14)), # Added ATR Period
+        "ATR_MULTIPLIER_SL": float(res("ATR_MULTIPLIER_SL", 2.0)), # How many "volatility units" (ATR) below the entry to set the Stop Loss
+        "ATR_MULTIPLIER_TP": float(res("ATR_MULTIPLIER_TP", 1.5)), # How much the price must drop from its peak to trigger the Trailing Stop.
+        "MIN_PROFIT_BUFFER": float(res("MIN_PROFIT_BUFFER", 0.0025)), # (0.25%) Ensures the bot doesn't exit via RSI unless fees (0.2%) are covered.
         "S3_BUCKET": res('AWS_S3_BUCKET', '032281018699-trading-bot-logs-bucket'),
         "CSV_FILE": "trades_log.csv",
         "CHART_FILE": "performance_chart.png",
